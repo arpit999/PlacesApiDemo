@@ -1,5 +1,6 @@
 package com.production.hometech.placesapidemo;
 
+import android.app.ProgressDialog;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
@@ -32,11 +33,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class PlacesActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class PlacesActivity extends AbstractMapActivity implements OnMapReadyCallback {
 
     private static final String TAG = PlacesActivity.class.getSimpleName();
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 1;
@@ -46,16 +48,33 @@ public class PlacesActivity extends AppCompatActivity implements OnMapReadyCallb
     private LatLngBounds.Builder builder = new LatLngBounds.Builder();
     Marker fromMarker, toMarker;
     Place from_place, to_place;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_places);
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        if (readyToGo()) {
+            setContentView(R.layout.activity_places);
+
+            // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+            SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.map);
+
+
+/*            if savedInstanceState is null — meaning that the activity is not being
+            recreated, but instead is being created from scratch — we call getMapAsync() on the
+            MapFragment. This triggers some asynchronous work to set up a GoogleMap object.
+                    getMapAsync() takes an implementation of OnMapReadyCallback as a parameter. In
+            this case, OnMapReadyCallback is implemented on the activity itself.*/
+
+            if (savedInstanceState == null) {
+                mapFragment.getMapAsync(this);
+            }
+
+        }
+
+
 
         PlaceAutocompleteFragment autocompleteFrom = (PlaceAutocompleteFragment)
                 getFragmentManager().findFragmentById(R.id.autocomplete_from);
@@ -66,6 +85,7 @@ public class PlacesActivity extends AppCompatActivity implements OnMapReadyCallb
                 getFragmentManager().findFragmentById(R.id.autocomplete_to);
 
         autocompleteTo.setHint("To Location");
+
 
 //        From Listener
         autocompleteFrom.setOnPlaceSelectedListener(new PlaceSelectionListener() {
@@ -256,6 +276,17 @@ public class PlacesActivity extends AppCompatActivity implements OnMapReadyCallb
     private class DownloadTask extends AsyncTask<String, Void, String> {
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            progressDialog = new ProgressDialog(PlacesActivity.this);
+            progressDialog.setIndeterminate(true);
+            progressDialog.setMessage("Please wait...");
+            progressDialog.show();
+
+        }
+
+        @Override
         protected String doInBackground(String... url) {
 
             String data = "";
@@ -379,6 +410,8 @@ public class PlacesActivity extends AppCompatActivity implements OnMapReadyCallb
 // Drawing polyline in the Google Map for the i-th route
             assert mMap != null;
             mMap.addPolyline(lineOptions);
+
+            progressDialog.dismiss();
         }
     }
 
